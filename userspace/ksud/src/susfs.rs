@@ -1,13 +1,12 @@
-#![allow(clippy::unreadable_literal)]
 use libc::SYS_reboot;
 
 const SUSFS_MAX_VERSION_BUFSIZE: usize = 16;
 const SUSFS_ENABLED_FEATURES_SIZE: usize = 8192;
 const ERR_CMD_NOT_SUPPORTED: i32 = 126;
-const KSU_INSTALL_MAGIC1: u32 = 0xDEADBEEF;
+const KSU_INSTALL_MAGIC1: u32 = 0xDEAD_BEEF;
 const CMD_SUSFS_SHOW_VERSION: u32 = 0x555e1;
 const CMD_SUSFS_SHOW_ENABLED_FEATURES: u32 = 0x555e2;
-const SUSFS_MAGIC: u32 = 0xFAFAFAFA;
+const SUSFS_MAGIC: u32 = 0xFAFA_FAFA;
 
 #[repr(C)]
 struct SusfsVersion {

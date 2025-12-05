@@ -20,8 +20,7 @@ const KPM_INFO: u64 = 5;
 const KPM_CONTROL: u64 = 6;
 const KPM_VERSION: u64 = 7;
 
-#[allow(clippy::unreadable_literal)]
-const KSU_IOCTL_KPM: u32 = 0xc0004bc8; // _IOC(_IOC_READ|_IOC_WRITE, 'K', 200, 0)
+const KSU_IOCTL_KPM: u32 = 0xc000_4bc8; // _IOC(_IOC_READ|_IOC_WRITE, 'K', 200, 0)
 
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
