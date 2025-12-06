@@ -10,11 +10,14 @@ use anyhow::{Context, Result, anyhow, bail, ensure};
 use regex_lite::Regex;
 use which::which;
 
-use crate::{
-    assets,
-    defs::{BACKUP_FILENAME, KSU_BACKUP_DIR, KSU_BACKUP_FILE_PREFIX},
-    utils,
-};
+use crate::assets;
+#[cfg(target_os = "android")]
+use crate::defs::{BACKUP_FILENAME, KSU_BACKUP_DIR, KSU_BACKUP_FILE_PREFIX};
+use crate::utils_common::ensure_dir_exists;
+
+#[cfg(target_os = "android")]
+use crate::utils;
+
 #[cfg(target_os = "android")]
 fn ensure_gki_kernel() -> Result<()> {
     let version = get_kernel_version()?;
@@ -341,6 +344,7 @@ pub fn restore(args: BootRestoreArgs) -> Result<()> {
         println!("- Output file is written to");
         println!("- {}", output_image.display().to_string().trim_matches('"'));
     }
+    #[cfg(target_os = "android")]
     if flash {
         if from_backup {
             println!("- Flashing new boot image from {}", new_boot.display());
@@ -476,6 +480,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         let bootimage = bootimage.as_path();
 
         // try extract magiskboot/bootctl
+        #[cfg(target_os = "android")]
         let _ = assets::ensure_binaries(false);
 
         if let Some(kernel) = kernel {
@@ -581,6 +586,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             println!("- {}", output_image.display().to_string().trim_matches('"'));
         }
 
+        #[cfg(target_os = "android")]
         if flash {
             println!("- Flashing new boot image");
             flash_boot(&bootdevice, new_boot)?;
@@ -681,6 +687,7 @@ fn flash_boot(bootdevice: &Option<String>, new_boot: PathBuf) -> Result<()> {
 fn find_magiskboot(magiskboot_path: Option<PathBuf>, workdir: &Path) -> Result<PathBuf> {
     let magiskboot = {
         if which("magiskboot").is_ok() {
+            #[cfg(target_os = "android")]
             let _ = assets::ensure_binaries(true);
             "magiskboot".into()
         } else {
@@ -807,6 +814,7 @@ pub fn list_available_partitions() -> Vec<String> {
     Vec::new()
 }
 
+#[cfg(target_os = "android")]
 fn post_ota() -> Result<()> {
     use crate::defs::ADB_DIR;
     use assets::BOOTCTL_PATH;
@@ -828,7 +836,7 @@ fn post_ota() -> Result<()> {
         .status()?;
 
     let post_fs_data = Path::new(ADB_DIR).join("post-fs-data.d");
-    utils::ensure_dir_exists(&post_fs_data)?;
+    ensure_dir_exists(&post_fs_data)?;
     let post_ota_sh = post_fs_data.join("post_ota.sh");
 
     let sh_content = format!(

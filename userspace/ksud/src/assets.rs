@@ -1,13 +1,34 @@
 use anyhow::Result;
-use const_format::concatcp;
 use rust_embed::RustEmbed;
 use std::path::Path;
 
-use crate::{defs::BINARY_DIR, utils};
+#[cfg(target_os = "android")]
+mod android {
+    use crate::assets::Asset;
+    use crate::defs::BINARY_DIR;
+    use crate::utils_common::ensure_binary;
+    use const_format::concatcp;
 
-pub const RESETPROP_PATH: &str = concatcp!(BINARY_DIR, "resetprop");
-pub const BUSYBOX_PATH: &str = concatcp!(BINARY_DIR, "busybox");
-pub const BOOTCTL_PATH: &str = concatcp!(BINARY_DIR, "bootctl");
+    pub const RESETPROP_PATH: &str = concatcp!(BINARY_DIR, "resetprop");
+    pub const BUSYBOX_PATH: &str = concatcp!(BINARY_DIR, "busybox");
+    pub const BOOTCTL_PATH: &str = concatcp!(BINARY_DIR, "bootctl");
+
+    pub fn ensure_binaries(ignore_if_exist: bool) -> anyhow::Result<()> {
+        for file in Asset::iter() {
+            if file == "ksuinit" || file.ends_with(".ko") {
+                // don't extract ksuinit and kernel modules
+                continue;
+            }
+            let asset =
+                Asset::get(&file).ok_or_else(|| anyhow::anyhow!("asset not found: {file}"))?;
+            ensure_binary(format!("{BINARY_DIR}{file}"), &asset.data, ignore_if_exist)?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "android")]
+pub use android::*;
 
 #[cfg(all(target_arch = "x86_64", target_os = "android"))]
 #[derive(RustEmbed)]
@@ -32,7 +53,7 @@ pub fn ensure_binaries(ignore_if_exist: bool) -> Result<()> {
             continue;
         }
         let asset = Asset::get(&file).ok_or_else(|| anyhow::anyhow!("asset not found: {file}"))?;
-        utils::ensure_binary(format!("{BINARY_DIR}{file}"), &asset.data, ignore_if_exist)?;
+        ensure_binary(format!("{BINARY_DIR}{file}"), &asset.data, ignore_if_exist)?;
     }
     Ok(())
 }

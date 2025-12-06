@@ -2,9 +2,7 @@ use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use std::path::PathBuf;
 
-#[cfg(target_os = "android")]
 use android_logger::Config;
-#[cfg(target_os = "android")]
 use log::LevelFilter;
 
 use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
@@ -477,15 +475,11 @@ enum Susfs {
 }
 
 pub fn run() -> Result<()> {
-    #[cfg(target_os = "android")]
     android_logger::init_once(
         Config::default()
             .with_max_level(LevelFilter::Trace) // limit log level
             .with_tag("KernelSU"), // logs will show under mytag tag
     );
-
-    #[cfg(not(target_os = "android"))]
-    env_logger::init();
 
     // the kernel executes su with argv[0] = "su" and replace it with us
     let arg0 = std::env::args().next().unwrap_or_default();
@@ -514,10 +508,7 @@ pub fn run() -> Result<()> {
             Ok(())
         }
         Commands::Module { command } => {
-            #[cfg(any(target_os = "linux", target_os = "android"))]
-            {
-                utils::switch_mnt_ns(1)?;
-            }
+            utils::switch_mnt_ns(1)?;
             match command {
                 Module::Install { zip } => module::install_module(&zip),
                 Module::UndoUninstall { id } => module::undo_uninstall_module(&id),
