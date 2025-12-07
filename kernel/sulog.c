@@ -13,6 +13,7 @@
 #include <linux/mm.h>
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
+#include <linux/sched/task.h>   // <<< TAMBAHKAN BARIS INI
 
 #include "klog.h"
 
