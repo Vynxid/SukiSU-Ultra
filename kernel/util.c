@@ -1,14 +1,32 @@
 #include <linux/mm.h>
 #include <linux/version.h>
+#include <linux/printk.h>
+#include <linux/rwsem.h>
+#include <asm/current.h>
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 #include <linux/pgtable.h>
 #else
 #include <asm/pgtable.h>
 #endif
-#include <linux/printk.h>
-#include <asm/current.h>
 
 #include "util.h"
+
+/*
+ * Compat: kernel 4.14 belum punya mmap_read_trylock() / mmap_read_unlock()
+ * Kita bungkus ke mmap_sem (rw_semaphore) yang sudah ada.
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
+static inline bool mmap_read_trylock(struct mm_struct *mm)
+{
+	return down_read_trylock(&mm->mmap_sem);
+}
+
+static inline void mmap_read_unlock(struct mm_struct *mm)
+{
+	up_read(&mm->mmap_sem);
+}
+#endif
 
 bool try_set_access_flag(unsigned long addr)
 {
@@ -67,7 +85,7 @@ bool try_set_access_flag(unsigned long addr)
 	}
 
 	ptep_set_access_flags(vma, addr, ptep, pte_mkyoung(pte), 0);
-	pr_info("set AF for addr %lx\n", addr);
+	pr_info("kernelsu: set AF for addr %lx\n", addr);
 	ret = true;
 
 out_pte_unlock:
