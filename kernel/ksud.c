@@ -225,9 +225,8 @@ static inline void handle_second_stage(void)
 }
 
 #ifdef CONFIG_KSU_MANUAL_HOOK
-// For handling ksud on init
-// TODO: Use it for SYSCALL_HOOK too!
-int __maybe_unused ksu_handle_execveat_init(struct filename *filename)
+// For handling ksud on init (manual hook variant)
+static int __maybe_unused ksu_handle_execveat_init_manual(struct filename *filename)
 {
 	if (current->pid != 1 && is_init(get_current_cred())) {
 		if (unlikely(strcmp(filename->name, KSUD_PATH) == 0)) {
@@ -271,16 +270,21 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
 	}
 
 #ifdef CONFIG_KSU_MANUAL_HOOK
-	if (!ksu_handle_execveat_init(filename))
+	/* gunakan varian manual lokal, bukan symbol global */
+	if (!ksu_handle_execveat_init_manual(filename))
 		return 1;
 #endif
 
 #ifdef CONFIG_KSU_SUSFS
-    if (!ksu_handle_execveat_init(filename)) {
-        // - return non-zero here if ksu_handle_execveat_init() return success
-        //   as we don't want it to execute ksu_handle_execveat_sucompat()
-        return 1;
-    }
+	/*
+	 * Varian SUSFS tetap memanggil ksu_handle_execveat_init()
+	 * yang didefinisikan di sucompat.c
+	 */
+	if (!ksu_handle_execveat_init(filename)) {
+		// - return non-zero here if ksu_handle_execveat_init() return success
+		//   as we don't want it to execute ksu_handle_execveat_sucompat()
+		return 1;
+	}
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 	if (unlikely(!memcmp(filename->name, system_bin_init,
