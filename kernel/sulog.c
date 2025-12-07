@@ -18,9 +18,15 @@
 #include <linux/sched/signal.h>
 
 #include "klog.h"
+#include "kernel_compat.h"       // <<< supaya TWA_RESUME terdefinisi
+
 #include "sulog.h"
 #include "ksu.h"
 #include "feature.h"
+
+#ifndef TWA_RESUME            // fallback kalau belum ada
+#define TWA_RESUME true
+#endif
 
 #if __SULOG_GATE
 
