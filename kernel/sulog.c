@@ -13,7 +13,8 @@
 #include <linux/mm.h>
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
-#include <linux/sched/task.h>   // <<< TAMBAHKAN BARIS INI
+#include <linux/sched/task.h>
+#include <linux/sched/signal.h>   // <<< untuk put_task_struct() di 4.14
 
 #include "klog.h"
 
