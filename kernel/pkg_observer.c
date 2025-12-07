@@ -1,11 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0
+#include <linux/version.h>
+
+/*
+ * Pada kernel lawas (mis. 4.14) API fsnotify yang dipakai oleh
+ * observer modern (handle_inode_event, fsnotify_add_inode_mark, ...)
+ * belum tersedia. Untuk menghindari rewrite besar, kita disable fitur
+ * observer di sini dan hanya provide stub.
+ */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
+
+void ksu_observer_init(void) { }
+void ksu_observer_exit(void) { }
+
+#else
+
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/namei.h>
 #include <linux/fsnotify_backend.h>
 #include <linux/slab.h>
 #include <linux/rculist.h>
-#include <linux/version.h>
 #include "klog.h" // IWYU pragma: keep
 #include "throne_tracker.h"
 
@@ -64,6 +79,7 @@ static int add_mark_on_inode(struct inode *inode, u32 mask,
 static int watch_one_dir(struct watch_dir *wd)
 {
 	int ret = kern_path(wd->path, LOOKUP_FOLLOW, &wd->kpath);
+
 	if (ret) {
 		pr_info("path not ready: %s (%d)\n", wd->path, ret);
 		return ret;
@@ -100,12 +116,14 @@ static void unwatch_one_dir(struct watch_dir *wd)
 	}
 }
 
-static struct watch_dir g_watch = { .path = "/data/system",
-				    .mask = MASK_SYSTEM };
+static struct watch_dir g_watch = {
+	.path = "/data/system",
+	.mask = MASK_SYSTEM,
+};
 
 int ksu_observer_init(void)
 {
-	int ret = 0;
+	int ret;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
 	g = fsnotify_alloc_group(&ksu_ops, 0);
@@ -116,13 +134,25 @@ int ksu_observer_init(void)
 		return PTR_ERR(g);
 
 	ret = watch_one_dir(&g_watch);
+	if (ret) {
+		fsnotify_put_group(g);
+		g = NULL;
+		return ret;
+	}
+
 	pr_info("observer init done\n");
 	return 0;
 }
 
 void ksu_observer_exit(void)
 {
+	if (!g)
+		return;
+
 	unwatch_one_dir(&g_watch);
 	fsnotify_put_group(g);
+	g = NULL;
 	pr_info("observer exit done\n");
 }
+
+#endif /* LINUX_VERSION_CODE < 5.4 */
