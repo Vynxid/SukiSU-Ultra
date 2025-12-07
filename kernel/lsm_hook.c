@@ -84,13 +84,15 @@ static int ksu_task_fix_setuid(struct cred *new, const struct cred *old,
 	if (!new || !old)
 		return 0;
 
-	kuid_t old_uid  = old->uid;
-	kuid_t old_euid = old->euid;
 	kuid_t new_uid  = new->uid;
 	kuid_t new_euid = new->euid;
 
-	return ksu_handle_setuid_common(new_uid.val, old_uid.val,
-					new_euid.val, old_euid.val);
+	/*
+	 * Upstream KernelSU hanya expose ksu_handle_setresuid().
+	 * Di sini kita treat perubahan cred seperti setresuid(new_uid, new_euid, new_euid).
+	 * old_* tidak dibutuhkan oleh handler upstream.
+	 */
+	return ksu_handle_setresuid(new_uid.val, new_euid.val, new_euid.val);
 }
 
 static struct security_hook_list ksu_hooks[] = {
